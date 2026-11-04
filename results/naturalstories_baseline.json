@@ -1,0 +1,53 @@
+{
+  "dataset": "Natural Stories (Futrell et al. 2021), self-paced reading, log RT",
+  "n_words": 10256,
+  "n_subjects": 180,
+  "n_stories": 10,
+  "noise_ceiling_r": {
+    "median": 0.8607000939168654,
+    "ci95": [
+      0.7122305846504822,
+      0.8850354813715342
+    ],
+    "method": "split-half over subjects, Spearman-Brown, 100 splits"
+  },
+  "nuisance_r2_out_of_sample": 0.4453633132543652,
+  "nuisance_r2_per_story": [
+    0.5217752300676362,
+    0.30339074963606605,
+    0.4745347083856625,
+    0.47025290949099274,
+    0.551327824479822,
+    0.2720047032681402,
+    0.6009122861673318,
+    0.4748167518276717,
+    0.42114389777466565,
+    0.4758886300761148
+  ],
+  "surprisal_only_r2_per_story": [
+    0.12008895673236764,
+    0.12680951955400066,
+    0.1758501113061407,
+    0.10618567078376151,
+    0.12366814283056982,
+    0.1796804455567571,
+    0.15909483829048188,
+    0.10748870587368087,
+    0.05918147355352876,
+    0.058762509255929296
+  ],
+  "residual_ceiling_r_approx": 0.5435451576586215,
+  "nuisance_regressors": [
+    "surprisal",
+    "log_freq",
+    "length",
+    "position",
+    "surprisal_lag1",
+    "surprisal_lag2",
+    "log_freq_lag1",
+    "log_freq_lag2",
+    "length_lag1",
+    "length_lag2"
+  ],
+  "notes": "GPT-3 davinci surprisal from the corpus probs file; no LLM hidden states yet."
+}

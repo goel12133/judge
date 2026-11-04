@@ -1,0 +1,15 @@
+[project]
+name = "judge"
+version = "0.0.1"
+description = "Do LLM representations predict what a reader does and feels while reading?"
+requires-python = ">=3.11"
+dependencies = ["numpy", "pandas", "scipy", "scikit-learn"]
+
+[project.optional-dependencies]
+dev = ["pytest"]
+
+[tool.setuptools]
+packages = ["judge"]
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
