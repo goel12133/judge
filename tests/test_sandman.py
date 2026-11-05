@@ -23,7 +23,7 @@ def test_published_means_match(s):
     m = s.mean_rating()
     assert np.isclose(m[0], 5.565217391, atol=1e-6)
     assert np.isclose(m[5], 6.826086957, atol=1e-6)
-    assert np.isclose(m[64], 6.043478261, atol=1e-6)
+    assert np.isclose(m[49], 4.913043478, atol=1e-6)
 
 
 def test_word_counts_match_paper(s):
