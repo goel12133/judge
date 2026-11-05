@@ -1,0 +1,36 @@
+{
+  "note": "Stand-in features (n-gram log-probs + 50-word bag), NOT an LLM result. Pipeline verification only.",
+  "n_features": 59,
+  "real": {
+    "r_resid": 0.10089121816063489,
+    "r_raw": 0.11821310930115192,
+    "per_fold": [
+      0.09556043125109433,
+      0.16886421704940974,
+      0.07880958681143346,
+      0.0779970865606546,
+      0.1940919025599449,
+      0.1383221323578783,
+      0.1645964140494567,
+      0.09118209073809412,
+      0.08427175666945382,
+      0.07267636525659772
+    ],
+    "alpha": 550.0
+  },
+  "shuffled_label_control": {
+    "r_resid": 0.007025810846737609
+  },
+  "random_feature_control": {
+    "r_resid": -0.019368521831819602
+  },
+  "bootstrap_over_stories": {
+    "median": 0.13340777471632304,
+    "ci95": [
+      0.08197362986285364,
+      0.1893105136035431
+    ],
+    "n_boot": 50
+  },
+  "command": "python scripts/run_pipeline_dryrun.py"
+}
