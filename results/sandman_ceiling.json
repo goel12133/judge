@@ -1,0 +1,20 @@
+{
+  "dataset": "Lehne & Koelsch 2015, The Sandman (shortened German), 23 readers x 65 segments, suspense 1-10",
+  "group_ceiling_r": {
+    "median": 0.9191419185197787,
+    "ci95": [
+      0.8607824300151236,
+      0.9520703056114355
+    ],
+    "method": "split-half over readers, Spearman-Brown, 500 splits"
+  },
+  "single_reader_vs_rest_r": {
+    "median": 0.5319987900860318,
+    "min": 0.047950747789933724,
+    "max": 0.7516054337853396
+  },
+  "mean_curve_turning_points": 32,
+  "per_segment_sd_mean": 1.822625731045065,
+  "contamination": "Hoffmann 1816 on Gutenberg (de/en); shortened edition likely partially memorised",
+  "command": "python scripts/run_sandman_ceiling.py"
+}
