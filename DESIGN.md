@@ -1,6 +1,6 @@
 # Where Does It Land? — Do LLMs Know What a Reader Feels
 
-Design v0.2, 4 Nov 2026. Mirror of the shared Claude Doc; the doc is the editable copy, this file is the one sessions read.
+Design v0.3, 5 Nov 2026. Mirror of the shared Claude Doc; the doc is the editable copy, this file is the one sessions read.
 
 ## Question
 
@@ -9,6 +9,31 @@ Do language models represent, moment by moment, what a human reader feels and do
 ## Why it is open
 
 The suspense-replication paper (arXiv 2508.15794) showed prompted LLMs track the direction of suspense but miss turning points, and had only aggregate human ratings. Brain-encoding work (Toneva & Wehbe 2019; Schrimpf 2021; Caucheteux & King 2022; Goldstein 2022) maps LLM activations to reading responses to study language processing, not effect. The Alice fMRI emotion paper (arXiv 2606.07707) used an LLM to label emotion and the brain as the target. Nobody has used human reader response as ground truth and model internals as the thing under test, across response channels.
+
+## Thesis (5 Nov)
+
+We read to meet another mind. What we call good writing is the style that surfaces from the way human prediction and appraisal work: a species-typical bias, not a property of the text. Language models predict a different objective (next-token likelihood over a web corpus) than a reader does (appraisal of stakes, goals and other minds), so text optimised by the first need not land on the second. The practical consequence: the thing to build is not a model that writes better, but a model that reads humans well enough to edit its own writing toward their reactions. This paper measures the gap that argument depends on.
+
+Pushback to state in the paper: the difference is not maths versus no maths; human cortex also predicts upcoming words before onset (Goldstein 2022). The difference is which objective and over which timescale.
+
+
+## Inverse framing: divergence as the object of study
+
+The conventional question is whether the model predicts the human. The inverse is: given the same text, what does each predictor fail to predict, and where. In Ely, Frankel and Kamenica's terms, surprise and suspense are properties of a predictor's belief process, so a human curve and a model curve exist for the same story and the difference between them is itself the measurement. Four divergence tests, each one figure:
+
+- Timescale. The model's beliefs are next-token; the reader's are over outcomes (will he be caught). Model surprise should lead human surprise by the lag between a word and its implication. Measure the cross-correlation lag per story.
+- Memorisation. A model that has read the text shows no surprise at its twists; readers still do. Where human surprise persists and model surprise vanishes, the model is retrieving, not predicting. This turns the contamination problem into a probe, and is a cleaner memorisation test than prefix completion.
+- Resolution (the paradox of suspense). Delatorre 2018: readers who know the ending still feel suspense. A pure belief-dynamics predictor cannot: once beliefs are resolved, expected change is zero. The model's suspense curve on a second reading should collapse; the human's should not. One experiment on existing data; the strongest single test that human suspense is not uncertainty.
+- Valence. Human surprise is asymmetric: a twist toward a bad outcome for a cared-for character counts more. Model belief change is symmetric over tokens. Weight model surprise by an appraisal estimate and test whether the fit to human ratings improves; if it does, the missing ingredient is named.
+This generalises H5 from a correlation into a characterisation of the gap by timescale, memorisation, resolution and valence. Caveat: human belief curves need ratings (Sandman, 65 points) or reading-time spikes, which conflate surprise with difficulty; phase 2 slider ratings would fix this, another reason to run it.
+
+
+## Precedents for the inverse framing (checked 5 Nov)
+
+- Zhou, Liu et al. (2024). Divergences between Language Models and Human Brains. NeurIPS 2024. https://arxiv.org/abs/2311.09308. Looks for where MEG responses (Harry Potter, Moth stories) are poorly predicted by GPT-2 XL and Llama-2; gaps cluster on social/emotional content and physical commonsense; fine-tuning on Social IQa narrows them. Suspense, surprise and memorisation not analysed. Venue precedent: a divergence paper in NeurIPS main.
+- Oh and Linzen (2026). To model human linguistic prediction, make LLMs less superhuman. Trends in Cognitive Sciences. https://www.sciencedirect.com/science/article/pii/S1364661326001270. Argues modern LLMs are superhuman predictors: memorised famous texts, no forgetting, lexically sharp predictions where humans spread probability over similar words. Lists the divergences; recommends making models more human rather than measuring the gap.
+- Authors UNVERIFIED (2023). Humans and language models diverge when predicting repeating text. CoNLL 2023. https://aclanthology.org/2023.conll-1.5.pdf. Humans and GPT-2 agree on first reading (r = 0.87), diverge on repeats (r = 0.05 by the third) because the model recalls perfectly and humans do not. Methodological template for the resolution test. Author list to verify.
+- Wilmot and Keller 2020; Delatorre et al. 2018: see section 7. Together with the above they supply method and motivation; the affect-specific, mechanism-level divergence study is open.
 
 ## Response channels (the dimensions)
 
