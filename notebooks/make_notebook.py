@@ -60,29 +60,43 @@ tok = AutoTokenizer.from_pretrained(MODEL)
 model = AutoModelForCausalLM.from_pretrained(MODEL, quantization_config=BitsAndBytesConfig(load_in_8bit=True), device_map="auto").eval()
 print("model loaded; layers:", model.config.num_hidden_layers)
 
-def forward_stats(enc, topk=0, chunk=256):
-    \"\"\"Run the base model once, then the LM head in token chunks so the full
-    vocab-sized logit matrix never sits on the GPU (T4 OOMs on 8k tokens x 150k vocab).
-    Returns hidden states (list of [T, d] cpu float tensors, index 0 = embeddings),
-    per-token surprisal of the actual next token (nats, cpu), and optional top-k log-probs.\"\"\"
-    ids = enc["input_ids"][0]
-    with torch.no_grad():
-        base = model.model(**{k: v.to(model.device) for k, v in enc.items()}, output_hidden_states=True)
-        hs = [h[0].float().cpu() for h in base.hidden_states]
-        last = base.last_hidden_state[0]
-        cap = getattr(model.config, "final_logit_softcapping", None)
-        surp = torch.zeros(len(ids)); tv, ti = [], []
-        for a in range(0, len(ids), chunk):
-            lg = model.lm_head(last[a:a + chunk]).float()
-            if cap: lg = torch.tanh(lg / cap) * cap
-            lp = torch.log_softmax(lg, -1)
-            nxt = ids[a + 1:a + chunk + 1].to(lp.device)
-            n = len(nxt)
-            if n: surp[a + 1:a + 1 + n] = -lp[:n].gather(1, nxt[:, None])[:, 0].cpu()
-            if topk:
-                v, i = torch.topk(lp, topk, dim=-1); tv.append(v.cpu()); ti.append(i.cpu())
-            del lg, lp
-        del base, last; torch.cuda.empty_cache()
+def forward_stats(enc, topk=0, chunk=256, window=4096, step=1024):
+    \"\"\"Hidden states for every layer, per-token surprisal of the actual next token (nats)
+    and optional top-k next-token log-probs, all on CPU.
+    Memory: the LM head runs in `chunk`-token pieces so the vocab-sized logit matrix never
+    sits on the GPU, and sequences longer than `window` are processed in sliding windows
+    (each target block of `step` tokens sees the preceding window-step tokens of context),
+    because SDPA on a T4 materialises the T x T attention (9.5 GB at 8.5k tokens).
+    Natural Stories items (<2k tokens) always get full context; Sandman (~8.5k tokens) is windowed.\"\"\"
+    all_ids = enc["input_ids"][0]
+    T = len(all_ids)
+    cap = getattr(model.config, "final_logit_softcapping", None)
+    L = model.config.num_hidden_layers + 1
+    hs = [[] for _ in range(L)]; surp = torch.zeros(T); tv, ti = [], []
+    s = 0
+    while s < T:
+        e = min(T, s + (window if s == 0 else step))
+        c0 = 0 if s == 0 else max(0, e - window)
+        ids = all_ids[c0:e]
+        with torch.no_grad():
+            base = model.model(input_ids=ids[None].to(model.device), output_hidden_states=True)
+            off = s - c0                       # first target position inside this window
+            for l, h in enumerate(base.hidden_states): hs[l].append(h[0, off:].float().cpu())
+            last = base.last_hidden_state[0, off:]
+            for a in range(0, len(last), chunk):
+                lg = model.lm_head(last[a:a + chunk]).float()
+                if cap: lg = torch.tanh(lg / cap) * cap
+                lp = torch.log_softmax(lg, -1)
+                g = s + a                                     # global position of lp[0]
+                nxt = all_ids[g + 1:g + 1 + len(lp)].to(lp.device)
+                n = len(nxt)
+                if n: surp[g + 1:g + 1 + n] = -lp[:n].gather(1, nxt[:, None])[:, 0].cpu()
+                if topk:
+                    v, i = torch.topk(lp, topk, dim=-1); tv.append(v.cpu()); ti.append(i.cpu())
+                del lg, lp
+            del base, last; torch.cuda.empty_cache()
+        s = e
+    hs = [torch.cat(x) for x in hs]
     top = (torch.cat(tv), torch.cat(ti)) if topk else None
     return hs, surp, top""")
 
