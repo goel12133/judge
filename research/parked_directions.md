@@ -1,6 +1,6 @@
 # Parked directions (not the current paper)
 
-Kept so they are not re-invented. Current paper: `../DESIGN.md`.
+Kept so they are not re-invented.
 
 ## Writing-judge directions (2026-11-04, before the pivot to reader response)
 

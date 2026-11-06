@@ -108,7 +108,7 @@ Only URLs fetched or seen in search results are listed.
 - **Login?** No. Size: < 5 MB. **Text redistributable?** Hoffmann (1816) is public domain; the shortened version is in the CC BY supplement. **Contamination: HIGH for the full German text (Gutenberg-DE); MEDIUM for the shortened 6,859-word version.** Matlin et al. 2025 used an English translation — if we do the same, our translation step is a confound to pre-register. Best-in-class target: real per-reader, per-segment suspense on literary fiction.
 
 ### 3.2 Delatorre et al. 2018 — 12-passage story [V paper; data partial]
-- **Contents.** 68 participants, 12 passages, 9-point SAM suspense after each passage, 2×2×2 conditions. Supplementary material contains the **story text(s)** (journalistic and novel style, good/bad ending). Raw per-participant ratings: **not found** — no data-availability statement or OSF link on the article page. Aggregate per-segment means are in the paper's figures/tables and were used by Matlin et al. 2025 (their repo https://github.com/eilab-gt/SuspensePerception has `configs/` for gerrig/lehne; whether it bundles rating tables is UNVERIFIED — clone and inspect `research/`, `experiments_archive/`).
+- **Contents.** 68 participants, 12 passages, 9-point SAM suspense after each passage, 2×2×2 conditions. Supplementary material contains the **story text(s)** (journalistic and novel style, good/bad ending). Raw per-participant ratings: **not found** — no data-availability statement or OSF link on the article page. Aggregate per-segment means are in the paper's figures/tables and were used by Matlin et al. 2025 (their repo https://github.com/eilab-gt/SuspensePerception has `configs/` for gerrig/lehne; it bundles the Lehne ratings but not Delatorre's raw ratings (checked 5 Nov)).
 - **Licence.** Frontiers CC BY 4.0 (article and supplement). **Genre.** Purpose-written realist drama. **Contamination: LOW** (unpublished story in a 2018 supplement PDF). **Founder task:** email Delatorre/Gervás for raw data if needed.
 
 ### 3.3 Gerrig & Bernardo 1994; Brewer & Ohtsuka 1988 [S]
@@ -161,7 +161,7 @@ Only URLs fetched or seen in search results are listed.
 ---
 
 ## 5. Open items / founder tasks surfaced here
-1. Clone `dwlmt/Story-Untangling` and `HCAI-Lab-GT/SuspensePerception`; inspect for bundled human rating tables (no approval needed beyond network).
+1. Done 5 Nov: `SuspensePerception` cloned; it bundles the Sandman per-reader ratings (23 × 65), the German segments and an English machine translation, loaded and tested in `judge/sandman.py`. `dwlmt/Story-Untangling` still to inspect.
 2. Confirm OpenNeuro accessions ds003643 and ds003020 and their `dataset_description.json` licence fields on download.
 3. Founder: request HP MEG (CMU form), Delatorre raw ratings, Wilmot annotations if absent, Rosenberg-lab slider data, Dundee (if ever needed).
 4. Verify GECO download page (http://expsy.ugent.be/downloads/geco) is live and whether registration is required.

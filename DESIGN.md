@@ -1,6 +1,6 @@
 # Where Does It Land? — Do LLMs Know What a Reader Feels
 
-Design v0.3, 5 Nov 2026. Mirror of the shared Claude Doc; the doc is the editable copy, this file is the one sessions read.
+Design v0.3, 5 Nov 2026. Decisions of 6 Nov at the end.
 
 ## Question
 
