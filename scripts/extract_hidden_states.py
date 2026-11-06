@@ -37,7 +37,8 @@ def main() -> None:
     tok = AutoTokenizer.from_pretrained(args.model)
     kw = dict(torch_dtype=torch.float16, device_map="auto")
     if args.eightbit:
-        kw["load_in_8bit"] = True
+        from transformers import BitsAndBytesConfig
+        kw["quantization_config"] = BitsAndBytesConfig(load_in_8bit=True)
     model = AutoModelForCausalLM.from_pretrained(args.model, **kw).eval()
 
     t = ns.load(args.root)

@@ -51,10 +51,10 @@ MODEL = "Qwen/Qwen2.5-7B"  #@param ["Qwen/Qwen2.5-7B", "google/gemma-2-9b", "met
 TAG = {"Qwen/Qwen2.5-7B": "qwen25_7b", "google/gemma-2-9b": "gemma2_9b", "meta-llama/Llama-3.1-8B": "llama31_8b"}[MODEL]
 from huggingface_hub import login
 login(token=os.environ["HF_TOKEN"], add_to_git_credential=False)
-from transformers import AutoModelForCausalLM, AutoTokenizer
+from transformers import AutoModelForCausalLM, AutoTokenizer, BitsAndBytesConfig
 import torch
 tok = AutoTokenizer.from_pretrained(MODEL)
-model = AutoModelForCausalLM.from_pretrained(MODEL, load_in_8bit=True, device_map="auto").eval()
+model = AutoModelForCausalLM.from_pretrained(MODEL, quantization_config=BitsAndBytesConfig(load_in_8bit=True), device_map="auto").eval()
 print("model loaded; layers:", model.config.num_hidden_layers)""")
 
 md("## Natural Stories: per-word hidden states and model surprisal")
