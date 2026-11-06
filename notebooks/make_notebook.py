@@ -50,7 +50,10 @@ code("""#@title Pick the model (run this notebook once per model)
 MODEL = "Qwen/Qwen2.5-7B"  #@param ["Qwen/Qwen2.5-7B", "google/gemma-2-9b", "meta-llama/Llama-3.1-8B"]
 TAG = {"Qwen/Qwen2.5-7B": "qwen25_7b", "google/gemma-2-9b": "gemma2_9b", "meta-llama/Llama-3.1-8B": "llama31_8b"}[MODEL]
 from huggingface_hub import login
-login(token=os.environ["HF_TOKEN"], add_to_git_credential=False)
+try:
+    login(token=os.environ["HF_TOKEN"], add_to_git_credential=False)
+except Exception as e:   # Qwen is ungated; only Gemma/Llama need a valid token
+    print("HF login failed (fine for Qwen, fatal for Gemma/Llama):", str(e)[:120])
 from transformers import AutoModelForCausalLM, AutoTokenizer, BitsAndBytesConfig
 import torch
 tok = AutoTokenizer.from_pretrained(MODEL)
