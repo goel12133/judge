@@ -30,4 +30,4 @@ No language-model hidden states have been probed yet; that needs a model downloa
 
 ## Licence
 
-Code: Apache-2.0 (placeholder; founder to confirm). Natural Stories is CC BY-NC-SA 4.0 and is not redistributed here.
+Code: MIT. Natural Stories is CC BY-NC-SA 4.0 and is not redistributed here.

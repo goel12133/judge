@@ -8,3 +8,5 @@
 - 2026-11-04 — Log RT, not raw RT, with the corpus README's filters (100–3000 ms, ≥5/6 comprehension).
 - 2026-11-04 — Default primary model Llama-3.1-8B base (open, widely probed, fits free Colab); founder may override before pre-registration.
 - 2026-11-04 — Belief-dynamics measures implemented generically (any belief process) so the same code scores humans and models; exact EFK normalisation flagged VERIFY in `judge/beliefs.py`.
+- 2026-11-06 — Founder decisions: primary model Llama-3.1-8B base; 70B extraction yes (budget to be set at first rental); phase 2 runs at our own pace, January 2027 is the latest start. Code licence MIT.
+- 2026-11-06 — Working doc moved to Google Docs with tabs (paper draft, design, pre-registration, status, mentors, resources); the repo markdown stays the source of truth for sessions, the doc is the founder's editing surface.

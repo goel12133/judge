@@ -105,8 +105,8 @@ COLM or EMNLP 2027 first; NeurIPS if H1–H3 hold with clean interpretability re
 
 Sub-10B hidden-state extraction runs on free Colab or a CPU box (slow). 70B needs a rented GPU for hours. Founder decides.
 
-## Open decisions (founder)
+## Decisions (founder, 6 Nov)
 
-- Primary model family? (default: Llama-3.1-8B base)
-- Spend on 70B extraction, or stay under 10B?
-- Run phase 2, or publish phase 1 alone?
+- Primary model: Llama-3.1-8B base. Secondary families: Gemma-2-9B, Qwen2.5-7B.
+- 70B extraction: yes, rented GPU, after the 8B results are in.
+- Phase 2: yes, at our own pace; January 2027 is the latest start.

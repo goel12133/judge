@@ -1,10 +1,10 @@
 # Pre-registration (DRAFT — becomes binding at the commit named below)
 
-Status: **draft, not yet binding.** It becomes binding when the founder commits it unchanged with the message `preregister: v1` after the three open decisions in DESIGN.md are made and *before* any held-out story is scored by a probe. After that commit, the primary test is run once. Everything else is exploratory and labelled so.
+Status: **draft, not yet binding.** It becomes binding when the founder commits it unchanged with the message `preregister: v1` *before* any held-out story is scored by a probe. After that commit, the primary test is run once. Everything else is exploratory and labelled so.
 
 ## Primary hypothesis (H1, processing channel)
 
-A linear ridge probe from the hidden states of **[MODEL, to be fixed: default Llama-3.1-8B, base]** at **the layer selected by inner cross-validation on training stories** predicts per-word residual log reading time on Natural Stories (self-paced reading, 180 subjects, 10 stories) better than both controls, after regressing out surprisal (with 2-word spillover), log frequency, length and position.
+A linear ridge probe from the hidden states of **Llama-3.1-8B (base)** at **the layer selected by inner cross-validation on training stories** predicts per-word residual log reading time on Natural Stories (self-paced reading, 180 subjects, 10 stories) better than both controls, after regressing out surprisal (with 2-word spillover), log frequency, length and position.
 
 - Test statistic: residual correlation r_resid, leave-one-story-out, bootstrap over stories (200 resamples).
 - Success: the 95% interval of r_resid excludes 0 and its lower bound exceeds the upper bound of both the shuffled-label and random-feature controls.

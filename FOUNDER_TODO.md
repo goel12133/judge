@@ -2,12 +2,7 @@
 
 Updated 2026-11-05. Order matters: 1 and 2 gate everything else.
 
-## 1. Make the three open decisions (2 min, phone)
-
-Reply with three words, or edit DESIGN.md:
-- Primary model: **Llama-3.1-8B base** (default) / Gemma-2-9B / Qwen2.5-7B
-- 70B extraction: **no for now** (default) / yes, budget S$___
-- Phase 2 self-report study: **decide in January** (default) / yes / no
+## 1. Decisions — DONE 6 Nov (Llama-3.1-8B; 70B yes; phase 2 at our pace, Jan latest)
 
 ## 2. Send five mentor emails (20 min)
 
@@ -35,13 +30,9 @@ Draft (adapt per person; attach `DESIGN.md` as PDF):
 > Vikram Goel
 > [one line of credentials: Syndrome2Vec preprint, Swarm Colosseum; link to GitHub]
 
-## 3. Confirm the code licence (1 min)
+## 3. Licence — DONE: MIT
 
-README says Apache-2.0 placeholder. Say "Apache" or "MIT".
-
-## 4. Make the repo public on GitHub when you're ready (5 min)
-
-Currently local to the build sandbox only. Create `judge` under your account, then I push. Public is fine now: nothing in it is a result yet, and a dated public history helps priority. Your call per hard rule 6.
+## 4. GitHub — repo created by founder 6 Nov; Claude to push (needs owner/name). Public is fine now: nothing in it is a result yet, and a dated public history helps priority. Your call per hard rule 6.
 
 ## 5. Later: GPU and data downloads
 
