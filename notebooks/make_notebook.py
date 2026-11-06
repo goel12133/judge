@@ -55,7 +55,33 @@ from transformers import AutoModelForCausalLM, AutoTokenizer, BitsAndBytesConfig
 import torch
 tok = AutoTokenizer.from_pretrained(MODEL)
 model = AutoModelForCausalLM.from_pretrained(MODEL, quantization_config=BitsAndBytesConfig(load_in_8bit=True), device_map="auto").eval()
-print("model loaded; layers:", model.config.num_hidden_layers)""")
+print("model loaded; layers:", model.config.num_hidden_layers)
+
+def forward_stats(enc, topk=0, chunk=256):
+    \"\"\"Run the base model once, then the LM head in token chunks so the full
+    vocab-sized logit matrix never sits on the GPU (T4 OOMs on 8k tokens x 150k vocab).
+    Returns hidden states (list of [T, d] cpu float tensors, index 0 = embeddings),
+    per-token surprisal of the actual next token (nats, cpu), and optional top-k log-probs.\"\"\"
+    ids = enc["input_ids"][0]
+    with torch.no_grad():
+        base = model.model(**{k: v.to(model.device) for k, v in enc.items()}, output_hidden_states=True)
+        hs = [h[0].float().cpu() for h in base.hidden_states]
+        last = base.last_hidden_state[0]
+        cap = getattr(model.config, "final_logit_softcapping", None)
+        surp = torch.zeros(len(ids)); tv, ti = [], []
+        for a in range(0, len(ids), chunk):
+            lg = model.lm_head(last[a:a + chunk]).float()
+            if cap: lg = torch.tanh(lg / cap) * cap
+            lp = torch.log_softmax(lg, -1)
+            nxt = ids[a + 1:a + chunk + 1].to(lp.device)
+            n = len(nxt)
+            if n: surp[a + 1:a + 1 + n] = -lp[:n].gather(1, nxt[:, None])[:, 0].cpu()
+            if topk:
+                v, i = torch.topk(lp, topk, dim=-1); tv.append(v.cpu()); ti.append(i.cpu())
+            del lg, lp
+        del base, last; torch.cuda.empty_cache()
+    top = (torch.cat(tv), torch.cat(ti)) if topk else None
+    return hs, surp, top""")
 
 md("## Natural Stories: per-word hidden states and model surprisal")
 
@@ -69,13 +95,8 @@ def extract_words(words_by_item, out_path):
         text = " ".join(ws)
         enc = tok(text, return_offsets_mapping=True, return_tensors="pt", add_special_tokens=True)
         offsets = enc.pop("offset_mapping")[0].tolist()
-        with torch.no_grad():
-            out = model(**{k: v.to(model.device) for k, v in enc.items()}, output_hidden_states=True)
-        logp = torch.log_softmax(out.logits[0].float(), -1)
         ids = enc["input_ids"][0]
-        tok_surp = torch.zeros(len(ids))
-        tok_surp[1:] = -logp[:-1].gather(1, ids[1:, None].to(logp.device))[:, 0].cpu()
-        hs = [h[0].float().cpu() for h in out.hidden_states]
+        hs, tok_surp, _ = forward_stats(enc)
         spans, cursor = [], 0
         for w in ws:
             spans.append((cursor, cursor + len(w))); cursor += len(w) + 1
@@ -97,7 +118,7 @@ def extract_words(words_by_item, out_path):
             surps.append(float(tok_surp[m].sum()))
             for l, h in enumerate(hs): layers.setdefault(l, []).append(h[m].mean(0).numpy().astype(np.float16))
         print(f"item {item}: {len(ws)} words, {len(ids)} tokens")
-        del out, hs, logp; torch.cuda.empty_cache()
+        del hs; torch.cuda.empty_cache()
     out = {"item": np.array(items), "zone": np.array(zones), "surprisal": np.array(surps)}
     for l, rows in layers.items(): out[f"layer_{l}"] = np.stack(rows)
     np.savez_compressed(out_path, **out)
@@ -121,12 +142,8 @@ seg_rows = {}; seg_surp = []; seg_idx = []
 full = "\\n\\n".join(segs)
 enc = tok(full, return_offsets_mapping=True, return_tensors="pt", add_special_tokens=True)
 offsets = enc.pop("offset_mapping")[0].tolist()
-with torch.no_grad():
-    out = model(**{k: v.to(model.device) for k, v in enc.items()}, output_hidden_states=True)
-logp = torch.log_softmax(out.logits[0].float(), -1)
 ids = enc["input_ids"][0]
-tok_surp = torch.zeros(len(ids)); tok_surp[1:] = -logp[:-1].gather(1, ids[1:, None].to(logp.device))[:, 0].cpu()
-hs = [h[0].float().cpu() for h in out.hidden_states]
+hs, tok_surp, (topv, topi) = forward_stats(enc, topk=64)
 # segment char spans
 bounds, cur = [], 0
 for seg in segs:
@@ -143,9 +160,8 @@ for i in range(65):
 for k in list(res):
     if k.startswith("layer_"): res[k] = np.stack(res[k])
 # also save the full per-token next-token log-prob top-k for belief-dynamics work (top 64 per position)
-topv, topi = torch.topk(logp, 64, dim=-1)
 res["tok_segment"] = seg_of_tok; res["tok_surprisal"] = tok_surp.numpy()
-res["tok_top64_logp"] = topv.cpu().numpy().astype(np.float16); res["tok_top64_ids"] = topi.cpu().numpy().astype(np.int32)
+res["tok_top64_logp"] = topv.numpy().astype(np.float16); res["tok_top64_ids"] = topi.numpy().astype(np.int32)
 np.savez_compressed(f"hs_sandman_{TAG}.npz", **res)
 print(f"wrote hs_sandman_{TAG}.npz; tokens:", len(ids))""")
 
