@@ -10,3 +10,5 @@
 - 2026-11-04 — Belief-dynamics measures implemented generically (any belief process) so the same code scores humans and models; exact EFK normalisation flagged VERIFY in `judge/beliefs.py`.
 - 2026-11-06 — Founder decisions: primary model Llama-3.1-8B base; 70B extraction yes (budget to be set at first rental); phase 2 runs at our own pace, January 2027 is the latest start. Code licence MIT.
 - 2026-11-06 — Working doc moved to Google Docs with tabs (paper draft, design, pre-registration, status, mentors, resources); the repo markdown stays the source of truth for sessions, the doc is the founder's editing surface.
+2026-11-06 — Colab extraction: LM head run in 256-token chunks (vocab-sized logits never on GPU); sequences over 4096 tokens use a sliding window (4096 context, 1024 step) because SDPA on a T4 materialises T×T attention. Natural Stories items are short, full context; Sandman (~9.5k tokens with Qwen tokenizer) is windowed — state in every Sandman table.
+2026-11-06 — HF login made non-fatal: Qwen2.5-7B is ungated; a bad token only blocks Gemma/Llama.
