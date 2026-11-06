@@ -13,13 +13,14 @@ def code(s): cells.append({"cell_type": "code", "metadata": {}, "execution_count
 
 md("""# judge — hidden-state extraction (Colab)
 
-One run: clones the repo, loads Llama-3.1-8B in 8-bit on a T4, extracts every layer's
+One run: clones the repo, loads the chosen model (Qwen2.5-7B, Gemma-2-9B or Llama-3.1-8B) in 8-bit on a T4, extracts every layer's
 hidden state per word for **Natural Stories** and per segment for **Sandman**, saves two
 `.npz` files and downloads them to your machine.
 
 Before running: **Runtime → Change runtime type → T4 GPU**. Then **Runtime → Run all**.
-You'll be asked for a Hugging Face read token once (accept the Llama 3.1 licence at
-huggingface.co/meta-llama/Llama-3.1-8B first). If the repo is private you'll also be asked
+You'll be asked for a Hugging Face read token once. Qwen needs no approval; Gemma needs the
+licence accepted on its model page (instant); Llama needs Meta's approval (usually under an hour).
+Run the notebook once per model: change the dropdown in the model cell and Run all again. If the repo is private you'll also be asked
 for a GitHub token; leave blank if it's public.
 """)
 
@@ -45,9 +46,11 @@ subprocess.run([sys.executable, "-m", "pip", "install", "-q", "-e", "judge"], ch
 os.chdir("judge")
 print("data ok")""")
 
-code("""from huggingface_hub import login
+code("""#@title Pick the model (run this notebook once per model)
+MODEL = "Qwen/Qwen2.5-7B"  #@param ["Qwen/Qwen2.5-7B", "google/gemma-2-9b", "meta-llama/Llama-3.1-8B"]
+TAG = {"Qwen/Qwen2.5-7B": "qwen25_7b", "google/gemma-2-9b": "gemma2_9b", "meta-llama/Llama-3.1-8B": "llama31_8b"}[MODEL]
+from huggingface_hub import login
 login(token=os.environ["HF_TOKEN"], add_to_git_credential=False)
-MODEL = "meta-llama/Llama-3.1-8B"
 from transformers import AutoModelForCausalLM, AutoTokenizer
 import torch
 tok = AutoTokenizer.from_pretrained(MODEL)
@@ -104,7 +107,7 @@ t = ns.load()
 words = t.words.sort_values(["item", "zone"])
 groups = [(int(item), grp["word"].tolist()) for item, grp in words.groupby("item", sort=True)]
 # zone numbering in words.tsv is 1..n per story in order, matching wi+1 above
-extract_words(groups, "hs_naturalstories_llama31_8b.npz")""")
+extract_words(groups, f"hs_naturalstories_{TAG}.npz")""")
 
 md("## Sandman: per-segment hidden states (last token of each segment, full left context) and segment surprisal")
 
@@ -143,14 +146,14 @@ for k in list(res):
 topv, topi = torch.topk(logp, 64, dim=-1)
 res["tok_segment"] = seg_of_tok; res["tok_surprisal"] = tok_surp.numpy()
 res["tok_top64_logp"] = topv.cpu().numpy().astype(np.float16); res["tok_top64_ids"] = topi.cpu().numpy().astype(np.int32)
-np.savez_compressed("hs_sandman_llama31_8b.npz", **res)
-print("wrote hs_sandman_llama31_8b.npz; tokens:", len(ids))""")
+np.savez_compressed(f"hs_sandman_{TAG}.npz", **res)
+print(f"wrote hs_sandman_{TAG}.npz; tokens:", len(ids))""")
 
 md("## Download the two files, then drop them into the chat")
 
 code("""from google.colab import files
-files.download("hs_naturalstories_llama31_8b.npz")
-files.download("hs_sandman_llama31_8b.npz")""")
+files.download(f"hs_naturalstories_{TAG}.npz")
+files.download(f"hs_sandman_{TAG}.npz")""")
 
 nb = {"cells": cells, "metadata": {"accelerator": "GPU", "colab": {"provenance": []}, "kernelspec": {"name": "python3", "display_name": "Python 3"}, "language_info": {"name": "python"}}, "nbformat": 4, "nbformat_minor": 0}
 Path(__file__).with_name("judge_extract.ipynb").write_text(json.dumps(nb, indent=1))
