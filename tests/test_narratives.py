@@ -46,3 +46,42 @@ def test_split_half_isc_detects_shared_signal():
 
 def test_network_label():
     assert nr.network_of("7Networks_LH_Default_PFC_1") == "Default"
+
+
+def test_probe_script_recovers_planted_signal(tmp_path):
+    """Fake 4 stories: word features drive a few parcels through the HRF; the script's
+    headline must be well above its controls and the planted parcels above the others."""
+    import json, subprocess, sys
+    from pathlib import Path
+    rng = np.random.default_rng(1)
+    repo = Path(__file__).resolve().parents[1]
+    narr = tmp_path / "narr"; narr.mkdir()
+    hs = {}
+    d, n_parc, n_subj = 16, 12, 10
+    labels = [f"7Networks_LH_{'Default' if p < 6 else 'Vis'}_X_{p}" for p in range(n_parc)]
+    W = rng.standard_normal((d, 3))                      # features -> 3 planted parcels
+    for k, name in enumerate(["a", "b", "c", "d"]):
+        n_words, tr, n_tr = 150, 1.5, 120
+        onsets = np.sort(rng.uniform(5, n_tr * tr - 10, n_words))
+        feats = rng.standard_normal((n_words, d)).astype(np.float16)
+        from judge import narratives as nr
+        drive = nr.words_to_trs(onsets, feats.astype(float) @ W, n_tr, tr)
+        shared = rng.standard_normal((n_tr, n_parc)) * 0.5
+        shared[:, :3] += 3 * (drive - drive.mean(0)) / (drive.std(0) + 1e-9)
+        bold = shared[None] + rng.standard_normal((n_subj, n_tr, n_parc)) * 0.7
+        np.savez_compressed(narr / f"narr_{name}.npz", bold=bold.astype(np.float16), subjects=np.array([f"s{i}" for i in range(n_subj)]),
+                            TR=tr, onset_s=0.0, word=np.array(["w"] * n_words), start_s=onsets, end_s=onsets + 0.3,
+                            text="w " * n_words, labels=np.array(labels))
+        hs[f"{name}/layer_4"] = feats
+        hs[f"{name}/surprisal"] = rng.uniform(0, 5, n_words)
+    np.savez_compressed(tmp_path / "hs.npz", **hs)
+    r = subprocess.run([sys.executable, str(repo / "scripts" / "run_narratives_probe.py"), "--narr", str(narr),
+                        "--hs", str(tmp_path / "hs.npz"), "--name", "faketest", "--layer", "4", "--dev", "a", "--n_boot", "20"],
+                       capture_output=True, text=True, cwd=repo)
+    assert r.returncode == 0, r.stderr[-2000:]
+    out = json.load(open(repo / "results" / "narratives_faketest_layer4.json"))
+    rp = np.array(out["per_parcel_r"])
+    assert rp[:3].mean() > 0.5 and rp[3:].mean() < 0.2
+    assert out["headline_isc_weighted_r"] > max(out["controls"].values()) + 0.1
+    for f in ("narratives_faketest_layer4.json", "narratives_faketest_layer4.md"):
+        (repo / "results" / f).unlink()
