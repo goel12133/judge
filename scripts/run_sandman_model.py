@@ -115,6 +115,25 @@ def main():
     r_best, pred_best = blocked_probe_small(Xb, y)
     r_shuf, _ = blocked_probe_small(Xb, rng.permutation(y))
     r_rand, _ = blocked_probe_small(rng.standard_normal(Xb.shape), y)
+    # permutation null for the best layer (200 shuffles): p = P(r_shuf >= r_best)
+    null = np.array([blocked_probe_small(Xb, rng.permutation(y))[0] for _ in range(200)])
+    perm = {"n": 200, "mean": float(np.nanmean(null)), "p95": float(np.nanpercentile(null, 95)),
+            "p_value": float((np.sum(null >= r_best) + 1) / (len(null) + 1))}
+    # nuisance baseline: story position, position^2, segment length, model surprisal
+    pos = np.arange(65, dtype=float)
+    N = np.c_[pos, pos ** 2, z["n_tokens"].astype(float), surp_mean]
+    r_nuis, pred_nuis = blocked_probe_small(N, y, alphas=(0.01, 0.1, 1, 10, 100))
+    # residual probe: hidden states -> y after the nuisance fit (fit on train folds only)
+    kf = KFold(n_splits=5, shuffle=False); pred_res = np.zeros(65); y_res_all = np.zeros(65)
+    for tr, te in kf.split(Xb):
+        from sklearn.linear_model import LinearRegression
+        lin = LinearRegression().fit(N[tr], y[tr]); y_res = y - lin.predict(N)
+        mu, sd = Xb[tr].mean(0), Xb[tr].std(0) + 1e-6
+        m = RidgeCV(alphas=(1, 10, 100, 1000, 10000, 100000)).fit((Xb[tr] - mu) / sd, y_res[tr])
+        pred_res[te] = m.predict((Xb[te] - mu) / sd); y_res_all[te] = y_res[te]
+    r_resid = corr(pred_res, y_res_all)
+    nuisance = {"position_vs_suspense": corr(pos, y), "nuisance_probe_r": r_nuis,
+                "residual_probe_r": r_resid, "n_tokens_vs_suspense": corr(z["n_tokens"], y)}
     # inner-selected layer (choose layer on folds' training halves) is overkill at n=65;
     # report best-layer as exploratory and the median across layers as a conservative number
     r_median_layers = float(np.nanmedian(list(per_layer.values())))
@@ -132,7 +151,9 @@ def main():
         "baselines": base, "belief_dynamics_proxies": belief,
         "probe_per_layer_r": per_layer,
         "probe_best": {"layer": int(bl), "kind": bkind, "r": r_best, "shuffled_label": r_shuf,
-                       "random_feature": r_rand, "median_over_layers": r_median_layers},
+                       "random_feature": r_rand, "median_over_layers": r_median_layers,
+                       "permutation_null": perm},
+        "nuisance": nuisance,
         "timescale": {"best_lag_model_surprisal_leads_human": lag, "r_at_best_lag": lag_r,
                       "lag_table": {str(k): v for k, v in lag_table.items()}},
         "reader_variance_H4": {"r": r_sd, "shuffled": r_sd_shuf},
@@ -172,6 +193,9 @@ def main():
 - Surprisal baselines vs suspense: mean {base['surprisal_mean_vs_suspense']:.3f}, sum {base['surprisal_sum_vs_suspense']:.3f}
 - Next-token entropy vs suspense: {belief['entropy_vs_suspense']:.3f}; entropy change vs human surprise proxy: {belief['entropy_change_vs_human_surprise_proxy']:.3f}
 - Best probe: layer {bl} ({bkind}), r = {r_best:.3f}; shuffled-label {r_shuf:.3f}; random-feature {r_rand:.3f}; median over layers {r_median_layers:.3f}
+- Permutation null (200 shuffles): mean {perm['mean']:.3f}, 95th pct {perm['p95']:.3f}, p = {perm['p_value']:.3f}
+- Nuisance (position, position², length, surprisal) alone: r = {r_nuis:.3f}; position vs suspense r = {nuisance['position_vs_suspense']:.3f}
+- Residual probe (hidden states → suspense after nuisance): r = {r_resid:.3f}
 - Timescale: model surprisal best lag = {lag} segments (positive = model leads), r = {lag_r:.3f}
 - Reader variance (H4): r = {r_sd:.3f} (shuffled {r_sd_shuf:.3f})
 
