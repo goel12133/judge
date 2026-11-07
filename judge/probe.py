@@ -32,6 +32,8 @@ class ProbeResult:
     n_items: int
     n_folds: int
     alpha: float | None = None
+    preds: np.ndarray | None = None   # held-out predictions (for story bootstrap without refit)
+    resid: np.ndarray | None = None   # matching held-out residual targets
 
 
 def _corr(a: np.ndarray, b: np.ndarray) -> float:
@@ -76,6 +78,7 @@ def blocked_probe(df: pd.DataFrame, features: np.ndarray, y: str, group: str = "
         n_items=len(df),
         n_folds=len(per_fold),
         alpha=float(np.median(alpha_used)),
+        preds=preds, resid=resid_all,
     )
 
 

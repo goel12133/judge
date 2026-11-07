@@ -121,14 +121,21 @@ def main() -> None:
     shuf = probe.shuffled_label_control(words, Xs, "y")
     rand = probe.random_feature_control(words, Xs, "y")
     boot = probe.bootstrap_heldout(words["item"].values, outer_preds, outer_resid, n_boot=args.n_boot)
+    g = words["item"].values
+    boot_shuf = probe.bootstrap_heldout(g, shuf.preds, shuf.resid, n_boot=args.n_boot)
+    boot_rand = probe.bootstrap_heldout(g, rand.preds, rand.resid, n_boot=args.n_boot)
+    success = bool(boot["ci95"][0] > 0 and boot["ci95"][0] > boot_shuf["ci95"][1]
+                   and boot["ci95"][0] > boot_rand["ci95"][1])
 
     out = {
         "model": args.name, "n_words": int(len(words)), "n_stories": int(words["item"].nunique()),
         "per_layer": per_layer,
         "inner_selected": {"r_resid_heldout": r_sel, "layers_chosen_per_fold": chosen,
                            "median_layer": sel_layer},
-        "controls_at_selected_layer": {"shuffled_label": shuf.r_resid, "random_feature": rand.r_resid},
+        "controls_at_selected_layer": {"shuffled_label": shuf.r_resid, "random_feature": rand.r_resid,
+                                       "shuffled_label_bootstrap": boot_shuf, "random_feature_bootstrap": boot_rand},
         "bootstrap_over_stories": boot,
+        "preregistered_success": success,
         "nuisance": baselines.nuisance_columns(),
         "command": f"python scripts/run_probe_naturalstories.py --hs {args.hs} --name {args.name}",
     }
@@ -140,7 +147,8 @@ def main() -> None:
 - Words {len(words)}, stories {words['item'].nunique()}; noise ceiling r = 0.861, approx residual ceiling 0.54 (see naturalstories_baseline.md)
 - Inner-selected layer (pre-registered rule): held-out r_resid = {r_sel:.3f}; layers chosen per fold {chosen}
 - Bootstrap over stories at layer {sel_layer}: median {boot['median']:.3f}, 95% {boot['ci95'][0]:.3f}–{boot['ci95'][1]:.3f}
-- Controls at layer {sel_layer}: shuffled labels {shuf.r_resid:.3f}, random features {rand.r_resid:.3f}
+- Controls at layer {sel_layer}: shuffled labels {shuf.r_resid:.3f} (95% {boot_shuf['ci95'][0]:.3f}–{boot_shuf['ci95'][1]:.3f}), random features {rand.r_resid:.3f} (95% {boot_rand['ci95'][0]:.3f}–{boot_rand['ci95'][1]:.3f})
+- Pre-registered success criterion (lower bound > 0 and > both controls' upper bounds): {'PASS' if success else 'FAIL'}
 - Best single layer (exploratory): {best_layer}, r_resid = {per_layer[best_layer]['r_resid']:.3f}
 - Fraction of approx residual ceiling: {r_sel/0.544:.2f}
 """
