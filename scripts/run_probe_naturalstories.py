@@ -30,7 +30,25 @@ def load_hs(path: str):
     z = np.load(path)
     keys = pd.DataFrame({"item": z["item"], "zone": z["zone"], "model_surprisal": z["surprisal"]})
     layers = sorted(int(k.split("_")[1]) for k in z.files if k.startswith("layer_"))
-    return keys, {l: z[f"layer_{l}"].astype(np.float32) for l in layers}
+    return keys, LazyLayers(z, layers)
+
+
+class LazyLayers:
+    """Dict-like view that decompresses one layer at a time (29 layers x 10k x 3.6k float32
+    is 4 GB; holding them all OOM-kills a small box)."""
+
+    def __init__(self, z, layers):
+        self.z, self.layers = z, layers
+
+    def __getitem__(self, l):
+        return self.z[f"layer_{l}"].astype(np.float32)
+
+    def items(self):
+        for l in self.layers:
+            yield l, self[l]
+
+    def keys(self):
+        return list(self.layers)
 
 
 def main() -> None:
@@ -38,6 +56,8 @@ def main() -> None:
     ap.add_argument("--hs", required=True)
     ap.add_argument("--name", required=True)
     ap.add_argument("--n_boot", type=int, default=200)
+    ap.add_argument("--inner_stride", type=int, default=4, help="candidate layers for inner selection: every k-th layer (compute budget)")
+    ap.add_argument("--inner_splits", type=int, default=3)
     args = ap.parse_args()
 
     t = ns.load()
@@ -65,10 +85,10 @@ def main() -> None:
     outer_preds, outer_resid, chosen = np.zeros(len(words)), np.zeros(len(words)), []
     for tr, te in gkf.split(words, groups=groups):
         best_l, best = None, -np.inf
-        for l, X in layers.items():
-            X = np.nan_to_num(X)
+        for l in layers.keys()[::args.inner_stride]:
+            X = np.nan_to_num(layers[l])
             inner = probe.blocked_probe(words.iloc[tr].reset_index(drop=True), X[tr], "y",
-                                        n_splits=5)
+                                        n_splits=args.inner_splits)
             if inner.r_resid > best:
                 best, best_l = inner.r_resid, l
         chosen.append(best_l)
