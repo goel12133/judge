@@ -182,11 +182,23 @@ res["tok_top64_logp"] = topv.numpy().astype(np.float16); res["tok_top64_ids"] = 
 np.savez_compressed(f"hs_sandman_{TAG}.npz", **res)
 print(f"wrote hs_sandman_{TAG}.npz; tokens:", len(ids))""")
 
-md("## Download the two files, then drop them into the chat")
+md("## Quick analyses on the runtime (Sandman probe, memorisation), then download")
+
+code("""import subprocess, sys, shutil, os
+subprocess.run(["git", "pull", "-q"], check=False)
+for cmd in (["scripts/run_sandman_model.py", "--hs", f"hs_sandman_{TAG}.npz", "--name", TAG],
+            ["scripts/run_memorisation.py", "--sandman", f"hs_sandman_{TAG}.npz", "--naturalstories", f"hs_naturalstories_{TAG}.npz", "--name", TAG]):
+    r = subprocess.run([sys.executable] + cmd, capture_output=True, text=True)
+    print(r.stdout[-2500:], r.stderr[-1500:] if r.returncode else "")
+shutil.make_archive(f"results_{TAG}", "zip", "results")
+print(sorted(os.listdir("results")))""")
+
+md("## Download: results zip (small) and the two hidden-state files (the Natural Stories one is ~1.7 GB; the full per-layer probe runs off-Colab)")
 
 code("""from google.colab import files
-files.download(f"hs_naturalstories_{TAG}.npz")
-files.download(f"hs_sandman_{TAG}.npz")""")
+files.download(f"results_{TAG}.zip")
+files.download(f"hs_sandman_{TAG}.npz")
+files.download(f"hs_naturalstories_{TAG}.npz")""")
 
 nb = {"cells": cells, "metadata": {"accelerator": "GPU", "colab": {"provenance": []}, "kernelspec": {"name": "python3", "display_name": "Python 3"}, "language_info": {"name": "python"}}, "nbformat": 4, "nbformat_minor": 0}
 Path(__file__).with_name("judge_extract.ipynb").write_text(json.dumps(nb, indent=1))
