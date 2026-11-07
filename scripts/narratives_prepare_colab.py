@@ -25,7 +25,7 @@ import subprocess
 import sys
 from pathlib import Path
 
-S3 = "https://s3.amazonaws.com/openneuro.org/ds002345"
+S3 = "https://s3.amazonaws.com/fcp-indi/data/Projects/narratives"   # OpenNeuro bucket holds raw BIDS only; derivatives + Gentle alignments are on the fcp-indi mirror
 
 
 def http_ok(url: str) -> bool:
