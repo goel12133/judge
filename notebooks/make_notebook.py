@@ -32,7 +32,17 @@ print("deps ok")""")
 
 code("""from getpass import getpass
 import os
-hf = getpass("Hugging Face read token: ").strip()
+from huggingface_hub import HfApi
+for attempt in range(3):
+    hf = getpass("Hugging Face read token (hf_..., 37 chars; leave blank for Qwen only): ").strip()
+    if not hf:
+        print("no token: fine for Qwen, Gemma/Llama will fail"); break
+    if not hf.startswith("hf_") or len(hf) < 30:
+        print(f"that is not a token (got {len(hf)} chars, starts with {hf[:3]!r}); copy the value from the token popup"); continue
+    try:
+        w = HfApi(token=hf).whoami(); print("token ok: account", w.get("name"), "| role", w.get("auth", {}).get("accessToken", {}).get("role")); break
+    except Exception as e:
+        print("token rejected:", str(e)[:100])
 os.environ["HF_TOKEN"] = hf
 gh = getpass("GitHub token (blank if repo is public): ").strip()
 url = f"https://{gh}@github.com/goel12133/judge" if gh else "https://github.com/goel12133/judge"
