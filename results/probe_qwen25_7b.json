@@ -1,0 +1,252 @@
+{
+  "model": "qwen25_7b",
+  "n_words": 10256,
+  "n_stories": 10,
+  "per_layer": {
+    "0": {
+      "r_resid": 0.19,
+      "r_raw": 0.158,
+      "per_fold": null,
+      "alpha": null,
+      "source": "log of run killed by container restart 7 Nov; per-fold values not recovered"
+    },
+    "1": {
+      "r_resid": 0.376,
+      "r_raw": 0.307,
+      "per_fold": null,
+      "alpha": null,
+      "source": "log of run killed by container restart 7 Nov; per-fold values not recovered"
+    },
+    "2": {
+      "r_resid": 0.418,
+      "r_raw": 0.355,
+      "per_fold": null,
+      "alpha": null,
+      "source": "log of run killed by container restart 7 Nov; per-fold values not recovered"
+    },
+    "3": {
+      "r_resid": 0.425,
+      "r_raw": 0.37,
+      "per_fold": null,
+      "alpha": null,
+      "source": "log of run killed by container restart 7 Nov; per-fold values not recovered"
+    },
+    "4": {
+      "r_resid": 0.417,
+      "r_raw": 0.347,
+      "per_fold": null,
+      "alpha": null,
+      "source": "log of run killed by container restart 7 Nov; per-fold values not recovered"
+    },
+    "5": {
+      "r_resid": 0.37,
+      "r_raw": 0.313,
+      "per_fold": null,
+      "alpha": null,
+      "source": "log of run killed by container restart 7 Nov; per-fold values not recovered"
+    },
+    "6": {
+      "r_resid": 0.38,
+      "r_raw": 0.328,
+      "per_fold": null,
+      "alpha": null,
+      "source": "log of run killed by container restart 7 Nov; per-fold values not recovered"
+    },
+    "7": {
+      "r_resid": 0.37,
+      "r_raw": 0.329,
+      "per_fold": null,
+      "alpha": null,
+      "source": "log of run killed by container restart 7 Nov; per-fold values not recovered"
+    },
+    "8": {
+      "r_resid": 0.368,
+      "r_raw": 0.332,
+      "per_fold": null,
+      "alpha": null,
+      "source": "log of run killed by container restart 7 Nov; per-fold values not recovered"
+    },
+    "9": {
+      "r_resid": 0.352,
+      "r_raw": 0.32,
+      "per_fold": null,
+      "alpha": null,
+      "source": "log of run killed by container restart 7 Nov; per-fold values not recovered"
+    },
+    "10": {
+      "r_resid": 0.381,
+      "r_raw": 0.329,
+      "per_fold": null,
+      "alpha": null,
+      "source": "log of run killed by container restart 7 Nov; per-fold values not recovered"
+    },
+    "11": {
+      "r_resid": 0.372,
+      "r_raw": 0.33,
+      "per_fold": null,
+      "alpha": null,
+      "source": "log of run killed by container restart 7 Nov; per-fold values not recovered"
+    },
+    "12": {
+      "r_resid": 0.355,
+      "r_raw": 0.321,
+      "per_fold": null,
+      "alpha": null,
+      "source": "log of run killed by container restart 7 Nov; per-fold values not recovered"
+    },
+    "13": {
+      "r_resid": 0.369,
+      "r_raw": 0.326,
+      "per_fold": null,
+      "alpha": null,
+      "source": "log of run killed by container restart 7 Nov; per-fold values not recovered"
+    },
+    "14": {
+      "r_resid": 0.377,
+      "r_raw": 0.322,
+      "per_fold": null,
+      "alpha": null,
+      "source": "log of run killed by container restart 7 Nov; per-fold values not recovered"
+    },
+    "15": {
+      "r_resid": 0.382,
+      "r_raw": 0.312,
+      "per_fold": null,
+      "alpha": null,
+      "source": "log of run killed by container restart 7 Nov; per-fold values not recovered"
+    },
+    "16": {
+      "r_resid": 0.399,
+      "r_raw": 0.326,
+      "per_fold": null,
+      "alpha": null,
+      "source": "log of run killed by container restart 7 Nov; per-fold values not recovered"
+    },
+    "17": {
+      "r_resid": 0.402,
+      "r_raw": 0.341,
+      "per_fold": null,
+      "alpha": null,
+      "source": "log of run killed by container restart 7 Nov; per-fold values not recovered"
+    },
+    "18": {
+      "r_resid": 0.395,
+      "r_raw": 0.323,
+      "per_fold": null,
+      "alpha": null,
+      "source": "log of run killed by container restart 7 Nov; per-fold values not recovered"
+    },
+    "19": {
+      "r_resid": 0.378,
+      "r_raw": 0.307,
+      "per_fold": null,
+      "alpha": null,
+      "source": "log of run killed by container restart 7 Nov; per-fold values not recovered"
+    },
+    "20": {
+      "r_resid": 0.375,
+      "r_raw": 0.3,
+      "per_fold": null,
+      "alpha": null,
+      "source": "log of run killed by container restart 7 Nov; per-fold values not recovered"
+    },
+    "21": {
+      "r_resid": 0.361,
+      "r_raw": 0.291,
+      "per_fold": null,
+      "alpha": null,
+      "source": "log of run killed by container restart 7 Nov; per-fold values not recovered"
+    },
+    "22": {
+      "r_resid": 0.344,
+      "r_raw": 0.266,
+      "per_fold": null,
+      "alpha": null,
+      "source": "log of run killed by container restart 7 Nov; per-fold values not recovered"
+    },
+    "23": {
+      "r_resid": 0.303,
+      "r_raw": 0.225,
+      "per_fold": null,
+      "alpha": null,
+      "source": "log of run killed by container restart 7 Nov; per-fold values not recovered"
+    },
+    "24": {
+      "r_resid": 0.321,
+      "r_raw": 0.246,
+      "per_fold": null,
+      "alpha": null,
+      "source": "log of run killed by container restart 7 Nov; per-fold values not recovered"
+    },
+    "25": {
+      "r_resid": 0.292,
+      "r_raw": 0.231,
+      "per_fold": null,
+      "alpha": null,
+      "source": "log of run killed by container restart 7 Nov; per-fold values not recovered"
+    },
+    "26": {
+      "r_resid": 0.284,
+      "r_raw": 0.218,
+      "per_fold": null,
+      "alpha": null,
+      "source": "log of run killed by container restart 7 Nov; per-fold values not recovered"
+    },
+    "27": {
+      "r_resid": 0.272,
+      "r_raw": 0.211,
+      "per_fold": null,
+      "alpha": null,
+      "source": "log of run killed by container restart 7 Nov; per-fold values not recovered"
+    },
+    "28": {
+      "r_resid": 0.212,
+      "r_raw": 0.183,
+      "per_fold": null,
+      "alpha": null,
+      "source": "log of run killed by container restart 7 Nov; per-fold values not recovered"
+    }
+  },
+  "inner_selected": {
+    "r_resid_heldout": 0.4118762805419052,
+    "layers_chosen_per_fold": [
+      4,
+      16,
+      16,
+      4,
+      4,
+      4,
+      4,
+      4,
+      16,
+      4
+    ],
+    "median_layer": 4
+  },
+  "controls_at_selected_layer": {
+    "shuffled_label": 0.09335760170176172,
+    "random_feature": -0.0038003853705597477
+  },
+  "bootstrap_over_stories": {
+    "median": 0.4124959679910387,
+    "ci95": [
+      0.35567916185942716,
+      0.46505555745282773
+    ],
+    "n_boot": 1000,
+    "method": "resample stories over held-out predictions"
+  },
+  "nuisance": [
+    "surprisal",
+    "log_freq",
+    "length",
+    "position",
+    "surprisal_lag1",
+    "surprisal_lag2",
+    "log_freq_lag1",
+    "log_freq_lag2",
+    "length_lag1",
+    "length_lag2"
+  ],
+  "command": "python scripts/run_probe_naturalstories.py --hs data/hs/hs_naturalstories_qwen25_7b.npz --name qwen25_7b"
+}
