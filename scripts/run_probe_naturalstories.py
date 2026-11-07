@@ -88,7 +88,15 @@ def main() -> None:
     groups = words["item"].values
     gkf = GroupKFold(n_splits=words["item"].nunique())
     outer_preds, outer_resid, chosen = np.zeros(len(words)), np.zeros(len(words)), []
-    for tr, te in gkf.split(words, groups=groups):
+    ckpt = OUT / f"probe_{args.name}_selection.npz"      # per-fold checkpoint (box restarts)
+    done = 0
+    if ckpt.exists():
+        c = np.load(ckpt, allow_pickle=True)
+        outer_preds, outer_resid, chosen, done = c["preds"], c["resid"], list(c["chosen"]), int(c["done"])
+        print(f"resuming selection at outer fold {done}", flush=True)
+    for k, (tr, te) in enumerate(gkf.split(words, groups=groups)):
+        if k < done:
+            continue
         best_l, best = None, -np.inf
         for l in layers.keys()[::args.inner_stride]:
             X = np.nan_to_num(layers[l])
@@ -105,6 +113,8 @@ def main() -> None:
         m = RidgeCV(alphas=(0.1, 1, 10, 100, 1000, 10000)).fit((X[tr] - mu) / sd, ytr)
         outer_preds[te] = m.predict((X[te] - mu) / sd)
         outer_resid[te] = yte
+        np.savez(ckpt, preds=outer_preds, resid=outer_resid, chosen=np.array(chosen), done=k + 1)
+        print(f"outer fold {k}: chose layer {best_l} (inner r_resid {best:.3f})", flush=True)
     r_sel = float(np.corrcoef(outer_preds, outer_resid)[0, 1])
     sel_layer = int(np.median(chosen))
     Xs = np.nan_to_num(layers[sel_layer])

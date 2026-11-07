@@ -31,6 +31,8 @@ def test_probe_script_runs_on_fake_hs(tmp_path):
     out = repo / "results" / "probe_faketest.json"
     assert out.exists()
     out.unlink(); (repo / "results" / "probe_faketest.md").unlink()
+    for f in ("probe_faketest_layers.json", "probe_faketest_selection.npz"):
+        (repo / "results" / f).unlink(missing_ok=True)
 
 
 def test_memorisation_run_length():
