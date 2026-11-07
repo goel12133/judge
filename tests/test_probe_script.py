@@ -31,3 +31,12 @@ def test_probe_script_runs_on_fake_hs(tmp_path):
     out = repo / "results" / "probe_faketest.json"
     assert out.exists()
     out.unlink(); (repo / "results" / "probe_faketest.md").unlink()
+
+
+def test_memorisation_run_length():
+    import importlib.util, sys
+    from pathlib import Path
+    p = Path(__file__).resolve().parents[1] / "scripts" / "run_memorisation.py"
+    spec = importlib.util.spec_from_file_location("mem", p); m = importlib.util.module_from_spec(spec); spec.loader.exec_module(m)
+    s = m.stats([3, 0.1, 0.2, 0.3, 2, 0.01, 0.02], "token")
+    assert s["longest_run_lt_0.5"] == 3 and abs(s["frac_lt_0.05"] - 2 / 7) < 1e-9
