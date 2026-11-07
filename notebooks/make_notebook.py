@@ -182,6 +182,58 @@ res["tok_top64_logp"] = topv.numpy().astype(np.float16); res["tok_top64_ids"] = 
 np.savez_compressed(f"hs_sandman_{TAG}.npz", **res)
 print(f"wrote hs_sandman_{TAG}.npz; tokens:", len(ids))""")
 
+md("## Narratives (fMRI, engagement channel): prepare parcel time series, then per-word hidden states")
+
+code("""#@title Narratives: prepare 8 stories (CC0; downloads cleaned MNI BOLD from OpenNeuro, reduces to Schaefer-400 parcels, deletes the volumes)
+RUN_NARRATIVES = True  #@param {type:"boolean"}
+NARR_STORIES = "pieman bronx black forgot notthefallintact merlin sherlock tunnel"  #@param {type:"string"}
+NARR_MAX_SUBJECTS = 30  #@param {type:"integer"}
+import subprocess, sys, os
+if RUN_NARRATIVES and not os.path.exists("narr/narr_meta.json"):
+    r = subprocess.run([sys.executable, "scripts/narratives_prepare_colab.py", "--out", "narr", "--max_subjects", str(NARR_MAX_SUBJECTS),
+                        "--stories", *NARR_STORIES.split()], capture_output=True, text=True)
+    print(r.stdout[-6000:], r.stderr[-3000:])
+elif RUN_NARRATIVES:
+    print("narr/ already prepared:", open("narr/narr_meta.json").read())""")
+
+code("""#@title Narratives: per-word hidden states (every 4th layer, mean over subtokens) and surprisal for each story's transcript
+import glob, json
+if RUN_NARRATIVES:
+    keep = list(range(0, model.config.num_hidden_layers + 1, 4))
+    out = {}
+    for fn in sorted(glob.glob("narr/narr_*.npz")):
+        story = fn.split("narr_")[-1][:-4]
+        z = np.load(fn, allow_pickle=False)
+        ws = [str(w) for w in z["word"]]
+        text = " ".join(ws)
+        enc = tok(text, return_offsets_mapping=True, return_tensors="pt", add_special_tokens=True)
+        offsets = enc.pop("offset_mapping")[0].tolist()
+        hs, tok_surp, _ = forward_stats(enc, window=2048, step=1024)
+        spans, cursor = [], 0
+        for w in ws:
+            spans.append((cursor, cursor + len(w))); cursor += len(w) + 1
+        starts = np.array([a for a, _ in spans])
+        tok_word = []
+        for (a, b) in offsets:
+            if b <= a: tok_word.append(-1); continue
+            c = a
+            while c < b and text[c] == " ": c += 1
+            tok_word.append(int(np.searchsorted(starts, c, side="right") - 1))
+        tok_word = np.array(tok_word)
+        surps = np.full(len(ws), np.nan)
+        feats = {l: np.full((len(ws), hs[0].shape[1]), np.nan, np.float16) for l in keep}
+        for wi in range(len(ws)):
+            m = tok_word == wi
+            if m.sum() == 0: continue
+            surps[wi] = float(tok_surp[m].sum())
+            for l in keep: feats[l][wi] = hs[l][m].float().mean(0).numpy().astype(np.float16)
+        out[f"{story}/surprisal"] = surps
+        for l in keep: out[f"{story}/layer_{l}"] = feats[l]
+        print(f"{story}: {len(ws)} words, {len(tok_word)} tokens", flush=True)
+        del hs; torch.cuda.empty_cache()
+    np.savez_compressed(f"hs_narratives_{TAG}.npz", **out)
+    print(f"wrote hs_narratives_{TAG}.npz")""")
+
 md("## Quick analyses on the runtime (Sandman probe, memorisation), then download")
 
 code("""import subprocess, sys, shutil, os
@@ -198,7 +250,12 @@ md("## Download: results zip (small) and the two hidden-state files (the Natural
 code("""from google.colab import files
 files.download(f"results_{TAG}.zip")
 files.download(f"hs_sandman_{TAG}.npz")
-files.download(f"hs_naturalstories_{TAG}.npz")""")
+files.download(f"hs_naturalstories_{TAG}.npz")
+import os
+if os.path.exists(f"hs_narratives_{TAG}.npz"):
+    files.download(f"hs_narratives_{TAG}.npz")
+    for fn in sorted(__import__("glob").glob("narr/narr_*.npz")) + ["narr/narr_meta.json"]:
+        files.download(fn)""")
 
 nb = {"cells": cells, "metadata": {"accelerator": "GPU", "colab": {"provenance": []}, "kernelspec": {"name": "python3", "display_name": "Python 3"}, "language_info": {"name": "python"}}, "nbformat": 4, "nbformat_minor": 0}
 Path(__file__).with_name("judge_extract.ipynb").write_text(json.dumps(nb, indent=1))
