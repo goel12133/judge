@@ -113,3 +113,14 @@ def test_beliefs_reject_non_simplex():
 def test_segment_mean():
     out = beliefs.segment_mean(np.arange(6, dtype=float), [2, 4, 6])
     assert list(out) == [0.5, 2.5, 4.5]
+
+
+def test_bootstrap_heldout_recovers_point_estimate():
+    import numpy as np
+    from judge.probe import bootstrap_heldout
+    rng = np.random.default_rng(0)
+    g = np.repeat(np.arange(10), 100)
+    x = rng.standard_normal(1000); y = 0.5 * x + rng.standard_normal(1000)
+    b = bootstrap_heldout(g, x, y, n_boot=300)
+    r = np.corrcoef(x, y)[0, 1]
+    assert b["ci95"][0] < r < b["ci95"][1] and abs(b["median"] - r) < 0.05

@@ -55,7 +55,7 @@ def main() -> None:
     ap = argparse.ArgumentParser()
     ap.add_argument("--hs", required=True)
     ap.add_argument("--name", required=True)
-    ap.add_argument("--n_boot", type=int, default=200)
+    ap.add_argument("--n_boot", type=int, default=1000)
     ap.add_argument("--inner_stride", type=int, default=4, help="candidate layers for inner selection: every k-th layer (compute budget)")
     ap.add_argument("--inner_splits", type=int, default=3)
     args = ap.parse_args()
@@ -71,13 +71,18 @@ def main() -> None:
     words = words[ok].reset_index(drop=True)
     idx = words.index.values
 
-    per_layer = {}
+    # per-layer sweep is cached (hours of CPU; the box has restarted mid-run before)
+    cache = OUT / f"probe_{args.name}_layers.json"
+    per_layer = {int(k): v for k, v in json.load(open(cache)).items()} if cache.exists() else {}
     for l, X in layers.items():
+        if l in per_layer:
+            continue
         X = X[np.isin(np.arange(len(keys)), idx)] if len(keys) != len(words) else X
         X = np.nan_to_num(X)
         r = probe.blocked_probe(words, X, "y")
         per_layer[l] = {"r_resid": r.r_resid, "r_raw": r.r_raw, "per_fold": r.per_fold, "alpha": r.alpha}
-        print(f"layer {l:2d}: r_resid={r.r_resid:.3f} r_raw={r.r_raw:.3f}")
+        print(f"layer {l:2d}: r_resid={r.r_resid:.3f} r_raw={r.r_raw:.3f}", flush=True)
+        OUT.mkdir(exist_ok=True); json.dump(per_layer, open(cache, "w"))
 
     # inner-selected layer: choose by training-fold performance within each outer fold
     groups = words["item"].values
@@ -105,7 +110,7 @@ def main() -> None:
     Xs = np.nan_to_num(layers[sel_layer])
     shuf = probe.shuffled_label_control(words, Xs, "y")
     rand = probe.random_feature_control(words, Xs, "y")
-    boot = probe.bootstrap_over_groups(words, Xs, "y", n_boot=args.n_boot)
+    boot = probe.bootstrap_heldout(words["item"].values, outer_preds, outer_resid, n_boot=args.n_boot)
 
     out = {
         "model": args.name, "n_words": int(len(words)), "n_stories": int(words["item"].nunique()),

@@ -121,3 +121,23 @@ def bootstrap_over_groups(df: pd.DataFrame, features: np.ndarray, y: str, n_boot
     return {"median": float(np.median(rs)), "ci95": (float(np.percentile(rs, 2.5)),
                                                      float(np.percentile(rs, 97.5))),
             "n_boot": int(len(rs))}
+
+
+def bootstrap_heldout(groups: np.ndarray, preds: np.ndarray, resid: np.ndarray,
+                      n_boot: int = 1000, seed: int = 0) -> dict:
+    """Bootstrap the held-out correlation by resampling stories with replacement over
+    already-held-out (prediction, residual) pairs. No refitting: the probes are fixed, the
+    uncertainty is over which stories were measured. Returns median and 95% interval."""
+    rng = np.random.default_rng(seed)
+    groups = np.asarray(groups)
+    ug = np.unique(groups)
+    idx = {g: np.where(groups == g)[0] for g in ug}
+    rs = []
+    for _ in range(n_boot):
+        pick = rng.choice(ug, size=len(ug), replace=True)
+        sel = np.concatenate([idx[g] for g in pick])
+        rs.append(_corr(preds[sel], resid[sel]))
+    rs = np.array(rs)
+    return {"median": float(np.median(rs)), "ci95": (float(np.percentile(rs, 2.5)),
+                                                     float(np.percentile(rs, 97.5))),
+            "n_boot": int(len(rs)), "method": "resample stories over held-out predictions"}
