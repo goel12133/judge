@@ -12,3 +12,4 @@
 - 2026-11-06 — Working doc moved to Google Docs with tabs (paper draft, design, pre-registration, status, mentors, resources); the repo markdown stays the source of truth for sessions, the doc is the founder's editing surface.
 2026-11-06 — Colab extraction: LM head run in 256-token chunks (vocab-sized logits never on GPU); sequences over 4096 tokens use a sliding window (4096 context, 1024 step) because SDPA on a T4 materialises T×T attention. Natural Stories items are short, full context; Sandman (~9.5k tokens with Qwen tokenizer) is windowed — state in every Sandman table.
 2026-11-06 — HF login made non-fatal: Qwen2.5-7B is ungated; a bad token only blocks Gemma/Llama.
+2026-11-07 — Inner layer selection on Natural Stories uses every 4th layer and 3 inner splits (2 CPUs, ~30 s per ridge fit); the full 29-layer sweep is reported separately. Pre-registered run on Llama will use the same budget unless a GPU box is rented.
