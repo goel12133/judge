@@ -81,7 +81,7 @@ def forward_stats(enc, topk=0, chunk=256, window=4096, step=1024):
         with torch.no_grad():
             base = model.model(input_ids=ids[None].to(model.device), output_hidden_states=True)
             off = s - c0                       # first target position inside this window
-            for l, h in enumerate(base.hidden_states): hs[l].append(h[0, off:].float().cpu())
+            for l, h in enumerate(base.hidden_states): hs[l].append(h[0, off:].to(torch.float16).cpu())   # fp16 on CPU: 33 layers x 9.5k x 4096 fp32 crashed the 12 GB Colab RAM
             last = base.last_hidden_state[0, off:]
             for a in range(0, len(last), chunk):
                 lg = model.lm_head(last[a:a + chunk]).float()
@@ -133,7 +133,7 @@ def extract_words(words_by_item, out_path):
                 for l, h in enumerate(hs): layers.setdefault(l, []).append(np.full(h.shape[1], np.nan, np.float16))
                 continue
             surps.append(float(tok_surp[m].sum()))
-            for l, h in enumerate(hs): layers.setdefault(l, []).append(h[m].mean(0).numpy().astype(np.float16))
+            for l, h in enumerate(hs): layers.setdefault(l, []).append(h[m].float().mean(0).numpy().astype(np.float16))
         print(f"item {item}: {len(ws)} words, {len(ids)} tokens")
         del hs; torch.cuda.empty_cache()
     out = {"item": np.array(items), "zone": np.array(zones), "surprisal": np.array(surps)}
@@ -160,7 +160,7 @@ full = "\\n\\n".join(segs)
 enc = tok(full, return_offsets_mapping=True, return_tensors="pt", add_special_tokens=True)
 offsets = enc.pop("offset_mapping")[0].tolist()
 ids = enc["input_ids"][0]
-hs, tok_surp, (topv, topi) = forward_stats(enc, topk=64)
+hs, tok_surp, (topv, topi) = forward_stats(enc, topk=64, window=2048, step=1024)   # Llama (32 KV heads) OOMs at 4096 on a T4
 # segment char spans
 bounds, cur = [], 0
 for seg in segs:
@@ -173,7 +173,7 @@ for i in range(65):
     last = np.where(m)[0].max()
     for l, h in enumerate(hs):
         res.setdefault(f"layer_{l}_last", []).append(h[last].numpy().astype(np.float16))
-        res.setdefault(f"layer_{l}_mean", []).append(h[m].mean(0).numpy().astype(np.float16))
+        res.setdefault(f"layer_{l}_mean", []).append(h[m].float().mean(0).numpy().astype(np.float16))
 for k in list(res):
     if k.startswith("layer_"): res[k] = np.stack(res[k])
 # also save the full per-token next-token log-prob top-k for belief-dynamics work (top 64 per position)
