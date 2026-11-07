@@ -49,6 +49,9 @@ print("data ok")""")
 code("""#@title Pick the model (run this notebook once per model)
 MODEL = "Qwen/Qwen2.5-7B"  #@param ["Qwen/Qwen2.5-7B", "google/gemma-2-9b", "meta-llama/Llama-3.1-8B"]
 TAG = {"Qwen/Qwen2.5-7B": "qwen25_7b", "google/gemma-2-9b": "gemma2_9b", "meta-llama/Llama-3.1-8B": "llama31_8b"}[MODEL]
+DO_NATURALSTORIES = True  #@param {type:"boolean"}
+DO_SANDMAN = True  #@param {type:"boolean"}
+DO_NARRATIVES = False  #@param {type:"boolean"}
 from huggingface_hub import login
 try:
     login(token=os.environ["HF_TOKEN"], add_to_git_credential=False)
@@ -141,64 +144,66 @@ def extract_words(words_by_item, out_path):
     np.savez_compressed(out_path, **out)
     print("wrote", out_path)
 
-t = ns.load()
-words = t.words.sort_values(["item", "zone"])
-groups = [(int(item), grp["word"].tolist()) for item, grp in words.groupby("item", sort=True)]
-# zone numbering in words.tsv is 1..n per story in order, matching wi+1 above
-extract_words(groups, f"hs_naturalstories_{TAG}.npz")""")
+if DO_NATURALSTORIES:
+    t = ns.load()
+    words = t.words.sort_values(["item", "zone"])
+    groups = [(int(item), grp["word"].tolist()) for item, grp in words.groupby("item", sort=True)]
+    # zone numbering in words.tsv is 1..n per story in order, matching wi+1 above
+    extract_words(groups, f"hs_naturalstories_{TAG}.npz")""")
 
 md("## Sandman: per-segment hidden states (last token of each segment, full left context) and segment surprisal")
 
-code("""from judge import sandman
-s = sandman.load()
-segs = s.segments_en   # English machine translation (German original is the stimulus; label as translated)
-text_so_far = ""
-seg_rows = {}; seg_surp = []; seg_idx = []
-# Feed cumulative context so each segment's representation sees everything before it.
-# Llama handles ~7k words; the full story is ~8.5k tokens, within 128k context.
-full = "\\n\\n".join(segs)
-enc = tok(full, return_offsets_mapping=True, return_tensors="pt", add_special_tokens=True)
-offsets = enc.pop("offset_mapping")[0].tolist()
-ids = enc["input_ids"][0]
-hs, tok_surp, (topv, topi) = forward_stats(enc, topk=64, window=2048, step=1024)   # Llama (32 KV heads) OOMs at 4096 on a T4
-# segment char spans
-bounds, cur = [], 0
-for seg in segs:
-    bounds.append((cur, cur + len(seg))); cur += len(seg) + 2
-seg_of_tok = np.array([next((i for i, (a, b) in enumerate(bounds) if a <= oa < b), -1) if ob > oa else -1 for oa, ob in offsets])
-res = {"segment": np.arange(1, 66), "surprisal_sum": np.zeros(65), "surprisal_mean": np.zeros(65), "n_tokens": np.zeros(65)}
-for i in range(65):
-    m = seg_of_tok == i
-    res["n_tokens"][i] = m.sum(); res["surprisal_sum"][i] = float(tok_surp[m].sum()); res["surprisal_mean"][i] = float(tok_surp[m].mean())
-    last = np.where(m)[0].max()
-    for l, h in enumerate(hs):
-        res.setdefault(f"layer_{l}_last", []).append(h[last].numpy().astype(np.float16))
-        res.setdefault(f"layer_{l}_mean", []).append(h[m].float().mean(0).numpy().astype(np.float16))
-for k in list(res):
-    if k.startswith("layer_"): res[k] = np.stack(res[k])
-# also save the full per-token next-token log-prob top-k for belief-dynamics work (top 64 per position)
-res["tok_segment"] = seg_of_tok; res["tok_surprisal"] = tok_surp.numpy()
-res["tok_top64_logp"] = topv.numpy().astype(np.float16); res["tok_top64_ids"] = topi.numpy().astype(np.int32)
-np.savez_compressed(f"hs_sandman_{TAG}.npz", **res)
-print(f"wrote hs_sandman_{TAG}.npz; tokens:", len(ids))""")
+code("""import numpy as np
+if DO_SANDMAN:
+    from judge import sandman
+    s = sandman.load()
+    segs = s.segments_en   # English machine translation (German original is the stimulus; label as translated)
+    text_so_far = ""
+    seg_rows = {}; seg_surp = []; seg_idx = []
+    # Feed cumulative context so each segment's representation sees everything before it.
+    # Llama handles ~7k words; the full story is ~8.5k tokens, within 128k context.
+    full = "\\n\\n".join(segs)
+    enc = tok(full, return_offsets_mapping=True, return_tensors="pt", add_special_tokens=True)
+    offsets = enc.pop("offset_mapping")[0].tolist()
+    ids = enc["input_ids"][0]
+    hs, tok_surp, (topv, topi) = forward_stats(enc, topk=64, window=2048, step=1024)   # Llama (32 KV heads) OOMs at 4096 on a T4
+    # segment char spans
+    bounds, cur = [], 0
+    for seg in segs:
+        bounds.append((cur, cur + len(seg))); cur += len(seg) + 2
+    seg_of_tok = np.array([next((i for i, (a, b) in enumerate(bounds) if a <= oa < b), -1) if ob > oa else -1 for oa, ob in offsets])
+    res = {"segment": np.arange(1, 66), "surprisal_sum": np.zeros(65), "surprisal_mean": np.zeros(65), "n_tokens": np.zeros(65)}
+    for i in range(65):
+        m = seg_of_tok == i
+        res["n_tokens"][i] = m.sum(); res["surprisal_sum"][i] = float(tok_surp[m].sum()); res["surprisal_mean"][i] = float(tok_surp[m].mean())
+        last = np.where(m)[0].max()
+        for l, h in enumerate(hs):
+            res.setdefault(f"layer_{l}_last", []).append(h[last].numpy().astype(np.float16))
+            res.setdefault(f"layer_{l}_mean", []).append(h[m].float().mean(0).numpy().astype(np.float16))
+    for k in list(res):
+        if k.startswith("layer_"): res[k] = np.stack(res[k])
+    # also save the full per-token next-token log-prob top-k for belief-dynamics work (top 64 per position)
+    res["tok_segment"] = seg_of_tok; res["tok_surprisal"] = tok_surp.numpy()
+    res["tok_top64_logp"] = topv.numpy().astype(np.float16); res["tok_top64_ids"] = topi.numpy().astype(np.int32)
+    np.savez_compressed(f"hs_sandman_{TAG}.npz", **res)
+    print(f"wrote hs_sandman_{TAG}.npz; tokens:", len(ids))""")
 
 md("## Narratives (fMRI, engagement channel): prepare parcel time series, then per-word hidden states")
 
 code("""#@title Narratives: prepare 8 stories (CC0; downloads cleaned MNI BOLD from OpenNeuro, reduces to Schaefer-400 parcels, deletes the volumes)
-RUN_NARRATIVES = True  #@param {type:"boolean"}
 NARR_STORIES = "pieman bronx black forgot notthefallintact merlin sherlock tunnel"  #@param {type:"string"}
 NARR_MAX_SUBJECTS = 30  #@param {type:"integer"}
 import subprocess, sys, os
-if RUN_NARRATIVES and not os.path.exists("narr/narr_meta.json"):
+if DO_NARRATIVES and not os.path.exists("narr/narr_meta.json"):
     r = subprocess.run([sys.executable, "scripts/narratives_prepare_colab.py", "--out", "narr", "--max_subjects", str(NARR_MAX_SUBJECTS),
                         "--stories", *NARR_STORIES.split()], capture_output=True, text=True)
     print(r.stdout[-6000:], r.stderr[-3000:])
-elif RUN_NARRATIVES:
+elif DO_NARRATIVES:
     print("narr/ already prepared:", open("narr/narr_meta.json").read())""")
 
 code("""#@title Narratives: per-word hidden states (every 4th layer, mean over subtokens) and surprisal for each story's transcript
 import glob, json
-if RUN_NARRATIVES:
+if DO_NARRATIVES:
     keep = list(range(0, model.config.num_hidden_layers + 1, 4))
     out = {}
     for fn in sorted(glob.glob("narr/narr_*.npz")):
@@ -238,8 +243,11 @@ md("## Quick analyses on the runtime (Sandman probe, memorisation), then downloa
 
 code("""import subprocess, sys, shutil, os
 subprocess.run(["git", "pull", "-q"], check=False)
-for cmd in (["scripts/run_sandman_model.py", "--hs", f"hs_sandman_{TAG}.npz", "--name", TAG],
-            ["scripts/run_memorisation.py", "--sandman", f"hs_sandman_{TAG}.npz", "--naturalstories", f"hs_naturalstories_{TAG}.npz", "--name", TAG]):
+cmds = []
+if os.path.exists(f"hs_sandman_{TAG}.npz"): cmds.append(["scripts/run_sandman_model.py", "--hs", f"hs_sandman_{TAG}.npz", "--name", TAG])
+if os.path.exists(f"hs_sandman_{TAG}.npz") and os.path.exists(f"hs_naturalstories_{TAG}.npz"):
+    cmds.append(["scripts/run_memorisation.py", "--sandman", f"hs_sandman_{TAG}.npz", "--naturalstories", f"hs_naturalstories_{TAG}.npz", "--name", TAG])
+for cmd in cmds:
     r = subprocess.run([sys.executable] + cmd, capture_output=True, text=True)
     print(r.stdout[-2500:], r.stderr[-1500:] if r.returncode else "")
 shutil.make_archive(f"results_{TAG}", "zip", "results")
@@ -248,10 +256,10 @@ print(sorted(os.listdir("results")))""")
 md("## Download: results zip (small) and the two hidden-state files (the Natural Stories one is ~1.7 GB; the full per-layer probe runs off-Colab)")
 
 code("""from google.colab import files
-files.download(f"results_{TAG}.zip")
-files.download(f"hs_sandman_{TAG}.npz")
-files.download(f"hs_naturalstories_{TAG}.npz")
 import os
+files.download(f"results_{TAG}.zip")
+for fn in (f"hs_sandman_{TAG}.npz", f"hs_naturalstories_{TAG}.npz"):
+    if os.path.exists(fn): files.download(fn)
 if os.path.exists(f"hs_narratives_{TAG}.npz"):
     files.download(f"hs_narratives_{TAG}.npz")
     for fn in sorted(__import__("glob").glob("narr/narr_*.npz")) + ["narr/narr_meta.json"]:
